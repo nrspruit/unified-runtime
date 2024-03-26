@@ -962,9 +962,10 @@ ur_queue_handle_t_::ur_queue_handle_t_(
       return true;
     return std::atoi(UrRet) != 0;
   }();
-  this->counterBasedEventsEnabled = isInOrderQueue() &&
-                                    Device->useDriverInOrderLists() &&
-                                    useDriverCounterBasedEvents;
+  this->counterBasedEventsEnabled =
+      isInOrderQueue() && Device->useDriverInOrderLists() &&
+      useDriverCounterBasedEvents &&
+      Device->Platform->ZeDriverEventPoolCountingEventsExtensionFound;
 }
 
 void ur_queue_handle_t_::adjustBatchSizeForFullBatch(bool IsCopy) {
