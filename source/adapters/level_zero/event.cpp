@@ -1061,6 +1061,7 @@ ur_result_t EventCreate(ur_context_handle_t Context, ur_queue_handle_t Queue,
                         bool CounterBasedEventEnabled) {
 
   bool ProfilingEnabled = !Queue || Queue->isProfilingEnabled();
+  bool UsingImmediateCommandlists = !Queue || Queue->UsingImmCmdLists;
 
   ur_device_handle_t Device = nullptr;
 
@@ -1081,7 +1082,7 @@ ur_result_t EventCreate(ur_context_handle_t Context, ur_queue_handle_t Queue,
 
   if (auto Res = Context->getFreeSlotInExistingOrNewPool(
           ZeEventPool, Index, HostVisible, ProfilingEnabled, Device,
-          CounterBasedEventEnabled, Queue->UsingImmCmdLists))
+          CounterBasedEventEnabled, UsingImmediateCommandlists))
     return Res;
 
   ZeStruct<ze_event_desc_t> ZeEventDesc;

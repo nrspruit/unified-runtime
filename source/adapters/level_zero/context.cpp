@@ -589,15 +589,16 @@ ur_context_handle_t_::decrementUnreleasedEventsInPool(ur_event_handle_t Event) {
   }
 
   ze_device_handle_t ZeDevice = nullptr;
+  bool UsingImmediateCommandlists =
+      !Event->UrQueue || Event->UrQueue->UsingImmCmdLists;
 
   if (!Event->IsMultiDevice && Event->UrQueue) {
     ZeDevice = Event->UrQueue->Device->ZeDevice;
   }
 
-  std::list<ze_event_pool_handle_t> *ZePoolCache =
-      getZeEventPoolCache(Event->isHostVisible(), Event->isProfilingEnabled(),
-                          Event->usingCounterBasedEvents(),
-                          Event->UrQueue->UsingImmCmdLists, ZeDevice);
+  std::list<ze_event_pool_handle_t> *ZePoolCache = getZeEventPoolCache(
+      Event->isHostVisible(), Event->isProfilingEnabled(),
+      Event->usingCounterBasedEvents(), UsingImmediateCommandlists, ZeDevice);
 
   // Put the empty pool to the cache of the pools.
   if (NumEventsUnreleasedInEventPool[Event->ZeEventPool] == 0)
