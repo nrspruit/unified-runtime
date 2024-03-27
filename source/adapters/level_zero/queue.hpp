@@ -65,6 +65,10 @@ struct ur_command_list_info_t {
   // the make_queue API the descriptor is unavailable so a dummy descriptor is
   // used and then this entry is marked as not eligible for recycling.
   ZeStruct<ze_command_queue_desc_t> ZeQueueDesc;
+
+  // Keeps track of whether this is an in-order command list.
+  bool InOrderCommandList{false};
+
   bool CanReuse{true};
 
   // Helper functions to tell if this is a copy command-list.

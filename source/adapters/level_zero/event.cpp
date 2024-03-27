@@ -1073,7 +1073,7 @@ ur_result_t EventCreate(ur_context_handle_t Context, ur_queue_handle_t Queue,
   }
 
   if (auto CachedEvent = Context->getEventFromContextCache(
-          HostVisible, ProfilingEnabled, Device)) {
+          HostVisible, ProfilingEnabled, Device, CounterBasedEventEnabled)) {
     *RetEvent = CachedEvent;
     return UR_RESULT_SUCCESS;
   }

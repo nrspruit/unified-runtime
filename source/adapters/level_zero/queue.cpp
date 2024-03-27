@@ -348,6 +348,7 @@ UR_APIEXPORT ur_result_t UR_APICALL urQueueCreate(
         } else {
           // Heuristically create some number of regular command-list to reuse.
           for (int I = 0; I < 10; ++I) {
+            printf("create command list\n");
             UR_CALL(Q->createCommandList(UseCopyEngine, CommandList));
             // Immediately return them to the cache of available command-lists.
             std::vector<ur_event_handle_t> EventsUnused;
@@ -1882,20 +1883,25 @@ ur_result_t ur_queue_handle_t_::createCommandList(
 
   ZeStruct<ze_command_list_desc_t> ZeCommandListDesc;
   ZeCommandListDesc.commandQueueGroupOrdinal = QueueGroupOrdinal;
-
+  printf("createCommandList Device->useDriverInOrderLists() %d, isInOrderQueue() %d CounterBasedEventsEnabled %d\n", (int)Device->useDriverInOrderLists(), (int)this->isInOrderQueue(), CounterBasedEventsEnabled);
+    printf("%p Queue creating lists\n", (void *)this);
+  bool InOrderList = false;
   if (Device->useDriverInOrderLists() && isInOrderQueue()) {
+    printf("%p Queue creating in order lists\n", (void *)this);
     ZeCommandListDesc.flags = ZE_COMMAND_LIST_FLAG_IN_ORDER;
+    InOrderList = ZeCommandListDesc.flags & ZE_COMMAND_LIST_FLAG_IN_ORDER;
   }
 
   ZE2UR_CALL(zeCommandListCreate, (Context->ZeContext, Device->ZeDevice,
                                    &ZeCommandListDesc, &ZeCommandList));
 
+  printf("%p list created\n", (void *)ZeCommandList);
   ZE2UR_CALL(zeFenceCreate, (ZeCommandQueue, &ZeFenceDesc, &ZeFence));
   ZeStruct<ze_command_queue_desc_t> ZeQueueDesc;
   ZeQueueDesc.ordinal = QueueGroupOrdinal;
   std::tie(CommandList, std::ignore) = CommandListMap.insert(
       std::pair<ze_command_list_handle_t, ur_command_list_info_t>(
-          ZeCommandList, {ZeFence, false, false, ZeCommandQueue, ZeQueueDesc}));
+          ZeCommandList, {ZeFence, false, false, ZeCommandQueue, ZeQueueDesc, InOrderList}));
   if (!CounterBasedEventsEnabled) {
     UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
     UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));

@@ -523,6 +523,7 @@ ur_result_t ur_context_handle_t_::getFreeSlotInExistingOrNewPool(
             ZE_EVENT_POOL_COUNTER_BASED_EXP_FLAG_NON_IMMEDIATE;
       }
       ZeEventPoolDesc.pNext = &counterBasedExt;
+      urPrint("counter based events flags set to: %d\n", counterBasedExt.flags);
     }
     urPrint("ze_event_pool_desc_t flags set to: %d\n", ZeEventPoolDesc.flags);
 
@@ -550,7 +551,7 @@ ur_result_t ur_context_handle_t_::getFreeSlotInExistingOrNewPool(
 }
 
 ur_event_handle_t ur_context_handle_t_::getEventFromContextCache(
-    bool HostVisible, bool WithProfiling, ur_device_handle_t Device) {
+    bool HostVisible, bool WithProfiling, ur_device_handle_t Device, bool CounterBasedEventEnabled) {
   std::scoped_lock<ur_mutex> Lock(EventCacheMutex);
   auto Cache = getEventCache(HostVisible, WithProfiling, Device);
   if (Cache->empty())
@@ -558,6 +559,9 @@ ur_event_handle_t ur_context_handle_t_::getEventFromContextCache(
 
   auto It = Cache->begin();
   ur_event_handle_t Event = *It;
+  if (Event->CounterBasedEventsEnabled != CounterBasedEventEnabled) {
+    return nullptr;
+  }
   Cache->erase(It);
   // We have to reset event before using it.
   Event->reset();
@@ -664,6 +668,7 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
     ze_command_queue_handle_t *ForcedCmdQueue) {
   // Immediate commandlists have been pre-allocated and are always available.
   if (Queue->UsingImmCmdLists) {
+    printf("immediate\n");
     CommandList = Queue->getQueueGroup(UseCopyEngine).getImmCmdList();
     if (CommandList->second.EventList.size() >
         ImmCmdListsEventCleanupThreshold) {
@@ -693,6 +698,7 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
   if (Queue->hasOpenCommandList(UseCopyEngine)) {
     if (AllowBatching) {
       CommandList = CommandBatch.OpenCommandList;
+      printf("batching with list %p\n", CommandList);
       UR_CALL(Queue->insertStartBarrierIfDiscardEventsMode(CommandList));
       return UR_RESULT_SUCCESS;
     }
@@ -716,6 +722,7 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
   // on this device that is available for use. If so, then reuse that
   // Level-Zero Command List and Fence for this PI call.
   {
+    printf("looking for cmdlist\n");
     // Make sure to acquire the lock before checking the size, or there
     // will be a race condition.
     std::scoped_lock<ur_mutex> Lock(Queue->Context->ZeCommandListCacheMutex);
@@ -729,6 +736,12 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
 
     for (auto ZeCommandListIt = ZeCommandListCache.begin();
          ZeCommandListIt != ZeCommandListCache.end(); ++ZeCommandListIt) {
+      printf("%p ZeCommandListIt->second.flags & ZE_COMMAND_QUEUE_FLAG_IN_ORDER %d\n", ZeCommandListIt->first, ZeCommandListIt->second.flags & ZE_COMMAND_QUEUE_FLAG_IN_ORDER);
+      bool inOrderList = ZeCommandListIt->second.flags & ZE_COMMAND_QUEUE_FLAG_IN_ORDER;
+      if (Queue->Device->useDriverInOrderLists() && Queue->isInOrderQueue() && !inOrderList) {
+        printf("cmdlist does not match\n");
+        continue;
+      }
       auto &ZeCommandList = ZeCommandListIt->first;
       auto it = Queue->CommandListMap.find(ZeCommandList);
       if (it != Queue->CommandListMap.end()) {
@@ -782,6 +795,11 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
     // Make sure this is the command list type needed.
     if (UseCopyEngine != it->second.isCopy(Queue))
       continue;
+
+    if (Queue->Device->useDriverInOrderLists() && Queue->isInOrderQueue() && !it->second.InOrderCommandList) {
+      printf("no list of type needed\n");
+      continue;
+    }
 
     ze_result_t ZeResult =
         ZE_CALL_NOCHECK(zeFenceQueryStatus, (it->second.ZeFence));

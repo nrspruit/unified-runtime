@@ -227,6 +227,8 @@ static ur_result_t enqueueMemFillHelper(ur_command_t CommandType,
   ur_event_handle_t InternalEvent;
   bool IsInternal = OutEvent == nullptr;
   ur_event_handle_t *Event = OutEvent ? OutEvent : &InternalEvent;
+  printf("%p Queue used in fill\n", (void *)Queue);
+  printf("Queue fill Device->useDriverInOrderLists() %d, isInOrderQueue() %d\n", (int)Device->useDriverInOrderLists(), (int)Queue->isInOrderQueue());
   UR_CALL(createEventAndAssociateQueue(Queue, Event, CommandType, CommandList,
                                        IsInternal, false));
 
@@ -235,6 +237,7 @@ static ur_result_t enqueueMemFillHelper(ur_command_t CommandType,
 
   const auto &ZeCommandList = CommandList->first;
   const auto &WaitList = (*Event)->WaitList;
+    printf("%p list used in fill\n", (void *)ZeCommandList);
 
   ZE2UR_CALL(zeCommandListAppendMemoryFill,
              (ZeCommandList, Ptr, Pattern, PatternSize, Size, ZeEvent,
