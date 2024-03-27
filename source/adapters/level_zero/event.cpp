@@ -128,7 +128,8 @@ UR_APIEXPORT ur_result_t UR_APICALL urEnqueueEventsWait(
     if (OutEvent) {
       Queue->LastCommandEvent = reinterpret_cast<ur_event_handle_t>(*OutEvent);
 
-      ZE2UR_CALL(zeEventHostSignal, ((*OutEvent)->ZeEvent));
+      if (!(*OutEvent)->CounterBasedEventsEnabled)
+        ZE2UR_CALL(zeEventHostSignal, ((*OutEvent)->ZeEvent));
       (*OutEvent)->Completed = true;
     }
   }
@@ -763,7 +764,8 @@ UR_APIEXPORT ur_result_t UR_APICALL urExtEventCreate(
   UR_CALL(EventCreate(Context, nullptr, false, true, Event));
 
   (*Event)->RefCountExternal++;
-  ZE2UR_CALL(zeEventHostSignal, ((*Event)->ZeEvent));
+  if (!(*Event)->CounterBasedEventsEnabled)
+    ZE2UR_CALL(zeEventHostSignal, ((*Event)->ZeEvent));
   return UR_RESULT_SUCCESS;
 }
 
@@ -781,7 +783,8 @@ UR_APIEXPORT ur_result_t UR_APICALL urEventCreateWithNativeHandle(
     UR_CALL(EventCreate(Context, nullptr, false, true, Event));
 
     (*Event)->RefCountExternal++;
-    ZE2UR_CALL(zeEventHostSignal, ((*Event)->ZeEvent));
+    if (!(*Event)->CounterBasedEventsEnabled)
+      ZE2UR_CALL(zeEventHostSignal, ((*Event)->ZeEvent));
     return UR_RESULT_SUCCESS;
   }
 
@@ -1337,7 +1340,8 @@ ur_result_t _ur_ze_event_list_t::createAndRetainUrZeEventList(
 
           zeCommandListAppendWaitOnEvents(ZeCommandList, 1u,
                                           &EventList[I]->ZeEvent);
-          zeEventHostSignal(MultiDeviceZeEvent);
+          if (!MultiDeviceEvent->CounterBasedEventsEnabled)
+            zeEventHostSignal(MultiDeviceZeEvent);
 
           UR_CALL(Queue->executeCommandList(CommandList, /* IsBlocking */ false,
                                             /* OkToBatchCommand */ true));

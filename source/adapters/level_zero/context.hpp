@@ -225,8 +225,8 @@ struct ur_context_handle_t_ : _ur_object {
                         UsingImmediateCmdList, CacheType);
     if (ZeDevice) {
       auto ZeEventPoolCacheMap =
-          WithProfiling ? &ZeEventPoolCacheDeviceMap[CacheType]
-                        : &ZeEventPoolCacheDeviceMap[CacheType + 1];
+          WithProfiling ? &ZeEventPoolCacheDeviceMap[CacheType * 2]
+                        : &ZeEventPoolCacheDeviceMap[CacheType * 2 + 1];
       if (ZeEventPoolCacheMap->find(ZeDevice) == ZeEventPoolCacheMap->end()) {
         ZeEventPoolCache.emplace_back();
         ZeEventPoolCacheMap->insert(
@@ -234,8 +234,8 @@ struct ur_context_handle_t_ : _ur_object {
       }
       return &ZeEventPoolCache[(*ZeEventPoolCacheMap)[ZeDevice]];
     } else {
-      return WithProfiling ? &ZeEventPoolCache[CacheType]
-                           : &ZeEventPoolCache[CacheType + 1];
+      return WithProfiling ? &ZeEventPoolCache[CacheType * 2]
+                           : &ZeEventPoolCache[CacheType * 2 + 1];
     }
   }
 

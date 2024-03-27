@@ -933,7 +933,8 @@ UR_APIEXPORT ur_result_t UR_APICALL urCommandBufferEnqueueExp(
       MustSignalWaitEvent = false;
     }
   }
-  if (MustSignalWaitEvent) {
+  if (MustSignalWaitEvent &&
+      !CommandBuffer->WaitEvent->CounterBasedEventsEnabled) {
     ZE2UR_CALL(zeEventHostSignal, (CommandBuffer->WaitEvent->ZeEvent));
   }
 
