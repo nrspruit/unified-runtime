@@ -933,8 +933,9 @@ UR_APIEXPORT ur_result_t UR_APICALL urCommandBufferEnqueueExp(
       MustSignalWaitEvent = false;
     }
   }
-  if (MustSignalWaitEvent &&
-      !CommandBuffer->WaitEvent->CounterBasedEventsEnabled) {
+  // Given WaitEvent was created without specifying Counting Events, then this
+  // event can be signalled on the host.
+  if (MustSignalWaitEvent) {
     ZE2UR_CALL(zeEventHostSignal, (CommandBuffer->WaitEvent->ZeEvent));
   }
 

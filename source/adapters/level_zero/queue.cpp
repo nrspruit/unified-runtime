@@ -962,7 +962,7 @@ ur_queue_handle_t_::ur_queue_handle_t_(
       return true;
     return std::atoi(UrRet) != 0;
   }();
-  this->counterBasedEventsEnabled =
+  this->CounterBasedEventsEnabled =
       isInOrderQueue() && Device->useDriverInOrderLists() &&
       useDriverCounterBasedEvents &&
       Device->Platform->ZeDriverEventPoolCountingEventsExtensionFound;
@@ -1247,7 +1247,7 @@ bool ur_queue_handle_t_::doReuseDiscardedEvents() {
 
 ur_result_t
 ur_queue_handle_t_::resetDiscardedEvent(ur_command_list_ptr_t CommandList) {
-  if (!usingCounterBasedEvents() && LastCommandEvent &&
+  if (!CounterBasedEventsEnabled && LastCommandEvent &&
       LastCommandEvent->IsDiscarded) {
     ZE2UR_CALL(zeCommandListAppendBarrier,
                (CommandList->first, nullptr, 1, &(LastCommandEvent->ZeEvent)));
@@ -1376,10 +1376,6 @@ bool ur_queue_handle_t_::isInOrderQueue() const {
   // If out-of-order queue property is not set, then this is a in-order queue.
   return ((this->Properties & UR_QUEUE_FLAG_OUT_OF_ORDER_EXEC_MODE_ENABLE) ==
           0);
-}
-
-bool ur_queue_handle_t_::usingCounterBasedEvents() const {
-  return this->counterBasedEventsEnabled;
 }
 
 // Helper function to perform the necessary cleanup of the events from reset cmd
@@ -1536,7 +1532,7 @@ ur_result_t createEventAndAssociateQueue(ur_queue_handle_t Queue,
   if (*Event == nullptr)
     UR_CALL(EventCreate(Queue->Context, Queue, IsMultiDevice,
                         HostVisible.value(), Event,
-                        Queue->usingCounterBasedEvents()));
+                        Queue->CounterBasedEventsEnabled));
 
   (*Event)->UrQueue = Queue;
   (*Event)->CommandType = CommandType;
@@ -1900,7 +1896,7 @@ ur_result_t ur_queue_handle_t_::createCommandList(
   std::tie(CommandList, std::ignore) = CommandListMap.insert(
       std::pair<ze_command_list_handle_t, ur_command_list_info_t>(
           ZeCommandList, {ZeFence, false, false, ZeCommandQueue, ZeQueueDesc}));
-  if (!usingCounterBasedEvents()) {
+  if (!CounterBasedEventsEnabled) {
     UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
     UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));
   }

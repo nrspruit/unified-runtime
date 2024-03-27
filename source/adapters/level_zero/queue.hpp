@@ -235,7 +235,7 @@ struct ur_queue_handle_t_ : _ur_object {
   ur_queue_flags_t Properties;
 
   // Keeps track of whether we are using Counter-based Events
-  bool counterBasedEventsEnabled = false;
+  bool CounterBasedEventsEnabled = false;
 
   // Map of all command lists used in this queue.
   ur_command_list_map_t CommandListMap;
@@ -400,8 +400,6 @@ struct ur_queue_handle_t_ : _ur_object {
 
   // Returns true if the queue is a in-order queue.
   bool isInOrderQueue() const;
-
-  bool usingCounterBasedEvents() const;
 
   // Returns true if the queue has discard events property.
   bool isDiscardEvents() const;

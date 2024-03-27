@@ -226,8 +226,6 @@ struct ur_event_handle_t_ : _ur_object {
 
   // Keeps track of whether we are using Counter-based Events.
   bool CounterBasedEventsEnabled = false;
-
-  bool usingCounterBasedEvents() const { return CounterBasedEventsEnabled; }
 };
 
 // Helper function to implement zeHostSynchronize.

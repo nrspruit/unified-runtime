@@ -598,7 +598,7 @@ ur_context_handle_t_::decrementUnreleasedEventsInPool(ur_event_handle_t Event) {
 
   std::list<ze_event_pool_handle_t> *ZePoolCache = getZeEventPoolCache(
       Event->isHostVisible(), Event->isProfilingEnabled(),
-      Event->usingCounterBasedEvents(), UsingImmediateCommandlists, ZeDevice);
+      Event->CounterBasedEventsEnabled, UsingImmediateCommandlists, ZeDevice);
 
   // Put the empty pool to the cache of the pools.
   if (NumEventsUnreleasedInEventPool[Event->ZeEventPool] == 0)

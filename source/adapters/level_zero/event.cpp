@@ -1138,7 +1138,7 @@ ur_result_t ur_event_handle_t_::reset() {
 
   if (!isHostVisible())
     HostVisibleEvent = nullptr;
-  if (!usingCounterBasedEvents())
+  if (!CounterBasedEventsEnabled)
     ZE2UR_CALL(zeEventHostReset, (ZeEvent));
   return UR_RESULT_SUCCESS;
 }
