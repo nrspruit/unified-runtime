@@ -409,6 +409,7 @@ UR_APIEXPORT ur_result_t UR_APICALL urEventGetInfo(
       // already be waiting for this event in synchronize().
       if (Lock.owns_lock()) {
         const auto &OpenCommandList = UrQueue->eventOpenCommandList(Event);
+        printf("urEventGetInfo OpenCommandList %p, %d\n", OpenCommandList, Event->CounterBasedEventsEnabled);
         if (OpenCommandList != UrQueue->CommandListMap.end()) {
           UR_CALL(UrQueue->executeOpenCommandList(
               OpenCommandList->second.isCopy(UrQueue)));
