@@ -1902,10 +1902,8 @@ ur_result_t ur_queue_handle_t_::createCommandList(
   std::tie(CommandList, std::ignore) = CommandListMap.insert(
       std::pair<ze_command_list_handle_t, ur_command_list_info_t>(
           ZeCommandList, {ZeFence, false, false, ZeCommandQueue, ZeQueueDesc, InOrderList}));
-  if (!CounterBasedEventsEnabled) {
-    UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
-    UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));
-  }
+  UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
+  UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));
   return UR_RESULT_SUCCESS;
 }
 
