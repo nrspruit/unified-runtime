@@ -550,7 +550,8 @@ ur_result_t ur_context_handle_t_::getFreeSlotInExistingOrNewPool(
 }
 
 ur_event_handle_t ur_context_handle_t_::getEventFromContextCache(
-    bool HostVisible, bool WithProfiling, ur_device_handle_t Device) {
+    bool HostVisible, bool WithProfiling, ur_device_handle_t Device,
+    bool CounterBasedEventEnabled) {
   std::scoped_lock<ur_mutex> Lock(EventCacheMutex);
   auto Cache = getEventCache(HostVisible, WithProfiling, Device);
   if (Cache->empty())
@@ -558,6 +559,9 @@ ur_event_handle_t ur_context_handle_t_::getEventFromContextCache(
 
   auto It = Cache->begin();
   ur_event_handle_t Event = *It;
+  if (Event->CounterBasedEventsEnabled != CounterBasedEventEnabled) {
+    return nullptr;
+  }
   Cache->erase(It);
   // We have to reset event before using it.
   Event->reset();

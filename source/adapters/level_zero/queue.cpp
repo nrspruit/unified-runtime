@@ -1247,12 +1247,13 @@ bool ur_queue_handle_t_::doReuseDiscardedEvents() {
 
 ur_result_t
 ur_queue_handle_t_::resetDiscardedEvent(ur_command_list_ptr_t CommandList) {
-  if (!CounterBasedEventsEnabled && LastCommandEvent &&
-      LastCommandEvent->IsDiscarded) {
+  if (LastCommandEvent && LastCommandEvent->IsDiscarded) {
     ZE2UR_CALL(zeCommandListAppendBarrier,
                (CommandList->first, nullptr, 1, &(LastCommandEvent->ZeEvent)));
-    ZE2UR_CALL(zeCommandListAppendEventReset,
-               (CommandList->first, LastCommandEvent->ZeEvent));
+    if (!CounterBasedEventsEnabled) {
+      ZE2UR_CALL(zeCommandListAppendEventReset,
+                 (CommandList->first, LastCommandEvent->ZeEvent));
+    }
 
     // Create new ur_event_handle_t but with the same ze_event_handle_t. We are
     // going to use this ur_event_handle_t for the next command with discarded
@@ -1896,10 +1897,8 @@ ur_result_t ur_queue_handle_t_::createCommandList(
   std::tie(CommandList, std::ignore) = CommandListMap.insert(
       std::pair<ze_command_list_handle_t, ur_command_list_info_t>(
           ZeCommandList, {ZeFence, false, false, ZeCommandQueue, ZeQueueDesc}));
-  if (!CounterBasedEventsEnabled) {
-    UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
-    UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));
-  }
+  UR_CALL(insertStartBarrierIfDiscardEventsMode(CommandList));
+  UR_CALL(insertActiveBarriers(CommandList, UseCopyEngine));
   return UR_RESULT_SUCCESS;
 }
 

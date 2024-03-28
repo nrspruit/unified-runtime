@@ -201,7 +201,8 @@ struct ur_context_handle_t_ : _ur_object {
   // Get ur_event_handle_t from cache.
   ur_event_handle_t getEventFromContextCache(bool HostVisible,
                                              bool WithProfiling,
-                                             ur_device_handle_t Device);
+                                             ur_device_handle_t Device,
+                                             bool CounterBasedEventEnabled);
 
   // Add ur_event_handle_t to cache.
   void addEventToContextCache(ur_event_handle_t);
