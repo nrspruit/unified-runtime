@@ -735,7 +735,7 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
          ZeCommandListIt != ZeCommandListCache.end(); ++ZeCommandListIt) {
       // If this is an InOrder Queue, then only allow lists which are in order.
       if (Queue->Device->useDriverInOrderLists() && Queue->isInOrderQueue() &&
-          !(ZeCommandListIt->second.flags & ZE_COMMAND_QUEUE_FLAG_IN_ORDER)) {
+          !(ZeCommandListIt->second.InOrderList)) {
         continue;
       }
       auto &ZeCommandList = ZeCommandListIt->first;
@@ -794,7 +794,7 @@ ur_result_t ur_context_handle_t_::getAvailableCommandList(
 
     // If this is an InOrder Queue, then only allow lists which are in order.
     if (Queue->Device->useDriverInOrderLists() && Queue->isInOrderQueue() &&
-        !(it->second.ZeQueueDesc.flags & ZE_COMMAND_QUEUE_FLAG_IN_ORDER)) {
+        !(it->second.IsInOrderList)) {
       continue;
     }
 
