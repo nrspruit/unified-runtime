@@ -1267,27 +1267,37 @@ ur_result_t _ur_ze_event_list_t::createAndRetainUrZeEventList(
           // is different from CurQueue.
           // TODO: rework this to avoid deadlock when another thread is
           //       locking the same queues but in a different order.
-          auto Lock = ((Queue == CurQueue)
-                           ? std::unique_lock<ur_shared_mutex>()
-                           : std::unique_lock<ur_shared_mutex>(Queue->Mutex));
-
+          bool SkipBatchExecute = false;
+            std::ostringstream oss;
+            oss << std::this_thread::get_id() << std::endl;
+          std::unique_lock<ur_shared_mutex> Lock(Queue->Mutex, std::defer_lock);
+          if (Queue != CurQueue) {
+            printf("createAndRetainUrZeEventList locking Queue %p:%s\n", Queue, oss.str().c_str());;
+            Lock.try_lock();
+            if (!Lock.owns_lock()) {
+               SkipBatchExecute = true;
+            }
+            printf("%s got the lock\n", oss.str().c_str());
+          }
           // If the event that is going to be waited is in an open batch
           // different from where this next command is going to be added,
           // then we have to force execute of that open command-list
           // to avoid deadlocks.
           //
-          const auto &OpenCommandList =
-              Queue->eventOpenCommandList(EventList[I]);
-          if (OpenCommandList != Queue->CommandListMap.end()) {
+          if (!SkipBatchExecute) {
+            const auto &OpenCommandList =
+                Queue->eventOpenCommandList(EventList[I]);
+            if (OpenCommandList != Queue->CommandListMap.end()) {
 
-            if (Queue == CurQueue &&
-                OpenCommandList->second.isCopy(Queue) == UseCopyEngine) {
-              // Don't force execute the batch yet since the new command
-              // is going to the same open batch as the dependent event.
-            } else {
-              if (auto Res = Queue->executeOpenCommandList(
-                      OpenCommandList->second.isCopy(Queue)))
-                return Res;
+              if (Queue == CurQueue &&
+                  OpenCommandList->second.isCopy(Queue) == UseCopyEngine) {
+                // Don't force execute the batch yet since the new command
+                // is going to the same open batch as the dependent event.
+              } else {
+                if (auto Res = Queue->executeOpenCommandList(
+                        OpenCommandList->second.isCopy(Queue)))
+                  return Res;
+              }
             }
           }
         } else {
