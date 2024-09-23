@@ -1700,6 +1700,7 @@ UR_APIEXPORT ur_result_t UR_APICALL urMemRelease(
     Buffer->free();
   }
   delete Mem;
+  Mem = nullptr;
 
   return UR_RESULT_SUCCESS;
 }
@@ -1969,18 +1970,32 @@ ur_result_t _ur_buffer::getZeHandle(char *&ZeHandle, access_mode_t AccessMode,
 
   auto &Allocation = Allocations[Device];
 
+  if (this->isFreed) {
+    logger::debug("getZeHandle(ur_device_handle{}) buffer already released, no valid handles.", (void *)Device);
+    ZeHandle = nullptr;
+    return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+  }
+
   // Sub-buffers don't maintain own allocations but rely on parent buffer.
   if (SubBuffer) {
-    UR_CALL(SubBuffer->Parent->getZeHandle(ZeHandle, AccessMode, Device));
-    ZeHandle += SubBuffer->Origin;
-    // Still store the allocation info in the PI sub-buffer for
-    // getZeHandlePtr to work. At least zeKernelSetArgumentValue needs to
-    // be given a pointer to the allocation handle rather than its value.
-    //
-    Allocation.ZeHandle = ZeHandle;
-    Allocation.ReleaseAction = allocation_t::keep;
-    LastDeviceWithValidAllocation = Device;
-    return UR_RESULT_SUCCESS;
+    // Verify that the Parent Buffer is still valid or if it has been freed.
+    if (SubBuffer->Parent && !SubBuffer->Parent->isFreed) {
+      UR_CALL(SubBuffer->Parent->getZeHandle(ZeHandle, AccessMode, Device));
+      ZeHandle += SubBuffer->Origin;
+      // Still store the allocation info in the PI sub-buffer for
+      // getZeHandlePtr to work. At least zeKernelSetArgumentValue needs to
+      // be given a pointer to the allocation handle rather than its value.
+      //
+      Allocation.ZeHandle = ZeHandle;
+      Allocation.ReleaseAction = allocation_t::keep;
+      LastDeviceWithValidAllocation = Device;
+      return UR_RESULT_SUCCESS;
+    } else {
+      // Return a null pointer handle and an error if the parent buffer is already gone.
+      logger::debug("getZeHandle(ur_device_handle{}) SubBuffer's parent already released, no valid handles.", (void *)Device);
+      ZeHandle = nullptr;
+      return UR_RESULT_ERROR_INVALID_NULL_HANDLE;
+    }
   }
 
   // First handle case where the buffer is represented by only
@@ -2209,6 +2224,7 @@ ur_result_t _ur_buffer::free() {
       die("_ur_buffer::free(): Unhandled release action");
     }
     ZeHandle = nullptr; // don't leave hanging pointers
+    this->isFreed = true;
   }
   return UR_RESULT_SUCCESS;
 }

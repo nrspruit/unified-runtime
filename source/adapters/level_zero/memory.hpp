@@ -133,6 +133,9 @@ struct _ur_buffer final : ur_mem_handle_t_ {
   // Frees all allocations made for the buffer.
   ur_result_t free();
 
+  // Tracks if this buffer is freed already or should be considered valid.
+  bool isFreed{false};
+
   // Information about a single allocation representing this buffer.
   struct allocation_t {
     // Level Zero memory handle is really just a naked pointer.
